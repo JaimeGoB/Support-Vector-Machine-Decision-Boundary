@@ -1,0 +1,179 @@
+---
+title: "Support Vector Machine Decision Boundary"
+author: "JaimeGoB"
+date: "11/28/2020"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r, include=FALSE, echo=FALSE}
+library(dplyr)
+library(e1071)
+```
+
+
+### 2. Consider the business school admission data from Mini Project 2. Split the data into training and test sets just as in that project. 
+
+```{r, include=FALSE, echo=FALSE}
+admission <- read.csv('/Users/jaime/Documents/UTD/stat-learning-stat4360/Mini-Project-6/Support_Vector_Machine_Decision_Boundary/data/admissions.csv')
+
+# Make group a factor
+admission$Group <- factor(admission$Group)
+```
+
+```{r, include=FALSE, echo=FALSE}
+#############################################
+# Setting up testing set and training set
+#############################################
+
+#We will take the first five observations in each category as test data and 
+#the remaining observations as training data
+test <- admission %>%
+  group_by(Group) %>%
+  top_n(-5, row_number())
+
+test_X <- test[,1:2]
+test_Y <- test[['Group']]
+
+#Use the rest of the dataset as training
+train <- admission %>% anti_join(test)
+
+train_X <- train[,1:2]
+train_Y <- train[['Group']]
+```
+
+
+#### (a) i) Fit a support vector classifier to the training data with cost parameter chosen optimally using 10-fold cross-validation. Summarize key features of the fit. ii) Evaluate its performance on the test data. iii) Summarize your results.
+
+#### i) Fit a support vector classifier to the training data with cost parameter chosen optimally using 10-fold cross-validation
+
+After performing a 10-Fold CV. I stored the optimal cost parameter and used it to fit a Support Vector Classifier. The decision boundaries from different Groups can be seen in the plot.
+```{r, include=TRUE, echo=FALSE}
+set.seed (1)
+tune_sv_classifier =tune(svm, Group  ~ .,data=train ,kernel ="linear", 
+              ranges =list(cost=c(0.00001,0.0001,0.001,0.01,0.1, 1,10,100)))
+
+# Storing optimal cost
+optimal_cost_svc <- tune_sv_classifier$best.parameters$cost
+
+# Fitting SV Classifier
+svc_fit = svm(Group ~., data=train , kernel ="linear", cost = optimal_cost_svc, scale = TRUE)
+
+# Decision Boundary Plot
+plot(svc_fit, train)
+summary(svc_fit)
+```
+
+#### ii) Evaluate its performance on the test data
+```{r, include=TRUE, echo=FALSE}
+
+# Getting predctions from svc on the test data
+pred_svc <- predict(svc_fit, test)
+
+# Building Confusion Matrix
+confusion_matrix_svc <- table(pred = pred_svc, true = test_Y)
+confusion_matrix_svc
+```
+
+
+#### iii) Summarize your results.
+From the confusion matrix it is evident to see that there are only two observations from Group 1 are missclassified as Group 3.
+
+#### (b) Repeat (a) using a support vector machine with a polynomial kernel of degree two.
+
+#### i) Fit a support vector machine to the training data with cost parameter chosen optimally using 10-fold cross-validation
+
+After performing a 10-Fold CV. I stored the optimal cost parameter and used it to fit a Support Vector Machine with polynomial kernel degree 2. The decision boundaries from different Groups can be seen in the plot.
+
+```{r, include=TRUE, echo=FALSE}
+set.seed (1)
+tune_svm_polynomial =tune(svm, 
+                          Group  ~ .,
+                          data=train ,
+                          kernel ="polynomial", 
+                          ranges =list(cost = c(0.00001,0.0001,0.001,0.01,0.1, 1,10,100), 
+                          degree = c(2)))
+# Storing optimal cost
+optimal_cost_svm_polynomial <- tune_svm_polynomial$best.parameters$cost
+
+# Fitting SV Classifier
+svm_fit_polynomial = svm(Group ~., 
+                        data=train , 
+                        kernel ="polynomial", 
+                        cost = optimal_cost_svm_polynomial, 
+                        degree = 2,
+                        scale = TRUE)
+
+# Decision Boundary Plot
+plot(svm_fit_polynomial, train)
+summary(svm_fit_polynomial)
+```
+
+#### ii) Evaluate its performance on the test data
+```{r, include=TRUE, echo=FALSE}
+
+# Getting predctions from svm on the test data
+pred_svm_polynomial <- predict(svm_fit_polynomial, test)
+
+# Building Confusion Matrix
+confusion_matrix_svm_polynomial <- table(pred = pred_svm_polynomial, true = test_Y)
+confusion_matrix_svm_polynomial
+```
+
+#### iii) Summarize your results.
+From the confusion matrix it is evident to see that there are many observations that are missclassified. There are only 8 observations from test correctly classified and 7 are missclassified. The SVM with kernel degree 2 does slightly better than random guessing.
+
+#### (c) Repeat (a) using a support vector machine with a radial kernel with both Gamma and cost parameter chosen optimally.
+
+#### i) Fit a support vector machine to the training data with cost parameter chosen optimally using 10-fold cross-validation
+
+After performing a 10-Fold CV. I stored the optimal cost parameter and gamma parameter and used it to fit a Support Vector Machine. The decision boundaries from different Groups can be seen in the plot.
+
+```{r, include=TRUE, echo=FALSE}
+set.seed (1)
+tune_svm_radial =tune(svm, 
+                      Group  ~ .,
+                      data=train ,
+                      kernel ="radial", 
+                      ranges =list(
+                              cost = c(0.00001,0.0001,0.001,0.01,0.1, 1,10,100), 
+                              gamma = c(0.00001,0.0001,0.001,0.01,0.1, 1,10,100)))
+# Storing optimal cost
+optimal_cost_svm_radial <- tune_svm_radial$best.parameters$cost
+optimal_gamma_svm_radial <- tune_svm_radial$best.parameters$gamma
+
+# Fitting SV Classifier
+svm_fit_radial = svm(Group ~.,
+                        data=train ,
+                        kernel ="radial",
+                        gamma = optimal_gamma_svm_radial,
+                        cost = optimal_cost_svm_radial,
+                        scale = TRUE)
+
+# Decision Boundary Plot
+plot(svm_fit_radial, train)
+summary(svm_fit_radial)
+```
+
+#### ii) Evaluate its performance on the test data
+```{r, include=TRUE, echo=FALSE}
+# Getting predctions from svm on the test data
+pred_svm_radial <- predict(svm_fit_radial, test)
+
+# Building Confusion Matrix
+confusion_matrix_svm_radial <- table(pred = pred_svm_radial, true = test_Y)
+confusion_matrix_svm_radial
+```
+
+#### iii) Summarize your results.
+From the confusion matrix it is evident to see that there is only one misclassified observation from Group 1 misclassified as Group 3. 
+
+#### (d) Compare results from the above three methods and also the method you recommended for these data in Mini Project 2. Which method would you recommend now? For this method, display the data with decision boundary superimposed.
+
+From Mini project 2. Using QDA the observations that are misclassified are only 1 similar to SVM - Radial Decision boundary. Since the both methods provide the exact results I would recommend both SVM - Radial Decision boundary and Quadratic Discriminant Analysis.
+
+![QDA vs SVM - Radial Kernel](/Users/jaime/Documents/UTD/stat-learning-stat4360/Mini-Project-6/Support_Vector_Machine_Decision_Boundary/data/svm_vs_qda.png)
+
+

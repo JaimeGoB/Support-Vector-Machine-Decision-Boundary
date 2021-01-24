@@ -1,0 +1,363 @@
+---
+title: "Support Vector Machines"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!-- # Illustration of classifiers based on support vectors -->
+<!-- # (see Chapter 9 Lab). -->
+
+<!-- # We will use the e1071 library R. -->
+<!-- # It uses a slightly different formulation from ours in that it has a cost 
+<!-- # constraint rather than a budget constraint.  -->
+<!-- # Small cost = more tolerant of margin violations = wide margin -->
+
+<!-- # Attache the packages we will need -->
+
+```{r, include=FALSE}
+library(e1071)
+library(ISLR)
+```
+
+<!-- # ------------------------------# -->
+<!-- # Support vector classifier --- #  -->
+<!-- # ----------------------------  # -->
+
+<!-- # Simulate data with p = 2 -->
+
+```{r, include=FALSE}
+set.seed(1)
+x <- matrix(rnorm(20 * 2), ncol = 2)
+y <- c(rep(-1, 10), rep(1, 10))
+x[y == 1, ] <- x[y == 1, ] + 1
+```
+
+<!-- # Plot the data -->
+
+```{r}
+plot(x, col = (3 - y))
+```
+
+<!-- # Are the classes linearly separable? -->
+
+<!-- # Fit a support vector classifier with cost = 10 -->
+
+```{r, include=FALSE}
+dat <- data.frame(x = x, y = as.factor(y))
+svmfit <- svm(y ~ ., data = dat, kernel = "linear", cost = 10, scale = FALSE)
+```
+
+<!-- # Note: svm requires the response to be a factor;  -->
+<!-- # set scale = TRUE to standardize the predictors -->
+
+<!-- # Plot the results -->
+
+```{r}
+plot(svmfit, dat)
+```
+
+<!-- # Identify the support vectors -->
+
+```{r, include=FALSE}
+svmfit$index
+```
+
+<!-- # Get a basic summary of results -->
+
+```{r, include=FALSE}
+summary(svmfit)
+```
+
+<!-- # get the fitted classes -->
+
+```{r, include=FALSE}
+svmfit$fitted
+```
+
+<!-- # Q: Can you identify the misclassified points? -->
+
+<!-- # Note: svm does not provide the coefficients of the boundary  -->
+<!-- # or the margin width  -->
+
+<!-- # Fit again with cost = 0.1 -->
+
+```{r, include=FALSE}
+svmfit <- svm(y ~ ., data = dat, kernel = "linear", cost = 0.1, scale = FALSE)
+svmfit$index
+summary(svmfit)
+```
+
+<!-- # Plot the results -->
+
+```{r}
+plot(svmfit, dat)
+```
+
+<!-- # Is the effect of smaller cost as expected? -->
+
+<!-- # Fit SV classifiers and perform cross-validation (default: 10-fold CV) -->
+
+```{r, include=FALSE}
+set.seed(1)
+tune.out <- tune(svm, y ~ ., data = dat, kernel = "linear", ranges = list(cost = c(0.001, 0.01, 0.1, 1, 5, 10)), scale = FALSE)
+summary(tune.out)
+```
+
+<!-- # Get results for the best model -->
+
+<!-- # Get results for the best model -->
+
+```{r, include=FALSE}
+bestmod <- tune.out$best.model
+summary(bestmod)
+```
+
+<!-- # Simulate test data -->
+
+```{r, include=FALSE}
+xtest <- matrix(rnorm(20 * 2), ncol = 2)
+ytest <- sample(c(-1, 1), 20, rep = TRUE)
+xtest[ytest == 1, ] <- xtest[ytest == 1, ] + 1
+testdat <- data.frame(x = xtest, y = as.factor(ytest))
+```
+
+<!-- # Predict the test responses using the best model -->
+
+```{r, include=FALSE}
+ypred <- predict(bestmod, testdat)
+table(predict = ypred, truth = testdat$y)
+```
+
+<!-- # The test error rate for the best model is 1/20 = 0.05 -->
+
+<!-- # Get the test error rate for the model with cost = 0.01 -->
+
+```{r, include=FALSE}
+svmfit <- svm(y ~ ., data = dat, kernel = "linear", cost = 0.01, scale = FALSE)
+ypred <- predict(svmfit, testdat)
+table(predict = ypred, truth = testdat$y)
+```
+
+<!-- # The test error rate increases to 2/20 = 0.10 -->
+
+<!-- # Consider the scenario when the classes are linearly separable -->
+<!-- # We do this by further separting the two classes -->
+
+```{r, include=FALSE}
+x[y == 1, ] = x[y == 1, ] + 0.5
+```
+
+<!-- # Plot the data -->
+
+```{r}
+plot(x, col = (y + 5)/2, pch = 19)
+```
+
+<!-- # Are the classes linearly separable? -->
+
+<!-- # Fit a support vector classifier with a large cost (so that there -->
+<!-- # is no misclassification --- maximal margin classifier -->
+
+```{r, include=FALSE}
+dat <- data.frame(x = x, y = as.factor(y))
+svmfit <- svm(y ~ ., data = dat, kernel = "linear", cost = 1e+05)
+summary(svmfit)
+```
+
+<!-- # Plot the results -->
+
+```{r}
+plot(svmfit, dat)
+```
+
+<!-- # Fit again with a small cost -->
+
+```{r, include=FALSE}
+svmfit = svm(y ~ ., data = dat, kernel = "linear", cost = 1)
+summary(svmfit)
+```
+
+<!-- # Plot the results -->
+
+```{r}
+plot(svmfit, dat)
+```
+
+<!-- # Which of the two models will likely be better? -->
+
+<!-- # ------------------------------# -->
+<!-- # Support vector machine --- #  -->
+<!-- # ----------------------------  # -->
+
+<!-- # Simulate data with non-linear class boundary -->
+
+```{r, include=FALSE}
+set.seed(1)
+x = matrix(rnorm(200 * 2), ncol = 2)
+x[1:100, ] <- x[1:100, ] + 2
+x[101:150, ] <- x[101:150, ] - 2
+y <- c(rep(1, 150), rep(2, 50))
+dat <- data.frame(x = x, y = as.factor(y))
+```
+
+<!-- # Plot the data -->
+
+```{r}
+plot(x, col = y)
+```
+
+<!-- # Randomly split the data in training and test sets each of size 100 -->
+
+```{r, include=FALSE}
+train <- sample(200, 100)
+```
+
+<!-- # Fit an SVM on training set with a radial kernel  -->
+
+```{r, include=FALSE}
+svmfit <- svm(y ~ ., data = dat[train, ], kernel = "radial", gamma = 1, cost = 1)
+summary(svmfit)
+```
+
+<!-- # Plot the results -->
+
+```{r}
+plot(svmfit, dat[train, ])
+```
+
+<!-- # Can reduce the training errors by increasing cost -->
+
+```{r, include=FALSE}
+svmfit <- svm(y ~ ., data = dat[train, ], kernel = "radial", gamma = 1, cost = 1e+05)
+summary(svmfit)
+```
+
+<!-- # Plot the results -->
+
+```{r}
+plot(svmfit, dat[train, ])
+```
+
+<!-- # Which model will likely be better? -->
+
+<!-- # Perform cross-validation to select the best model -->
+
+```{r, include=FALSE}
+set.seed(1)
+tune.out <- tune(svm, y ~ ., data = dat[train, ], kernel = "radial", 
+	ranges = list(cost = c(0.1, 1, 10, 100, 1000), gamma = c(0.5, 1, 2, 3, 4)))
+summary(tune.out)
+```
+
+<!-- # Note: Considering both cost and gamma -->
+
+<!-- # Get results for the best model -->
+
+```{r, include=FALSE}
+bestmod <- tune.out$best.model
+summary(bestmod)
+```
+
+<!-- # Evaluate test set peformance of the best model -->
+
+```{r, include=FALSE}
+table(true = dat[-train, "y"], pred = predict(bestmod, newdata = dat[-train, ]))
+```
+
+<!-- # Test error rate: 10/100 = 0.10 -->
+
+<!-- # --------------------------------------------------# -->
+<!-- # Support vector machine with multiple classes --- #  -->
+<!-- # ------------------------------------------------  # -->
+
+<!-- # Simulate a third class of observations and add to the previous dataset -->
+
+```{r, include=FALSE}
+set.seed(1)
+x <- rbind(x, matrix(rnorm(50 * 2), ncol = 2))
+y <- c(y, rep(0, 50))
+x[y == 0, 2] <- x[y == 0, 2] + 2
+dat = data.frame(x = x, y = as.factor(y))
+```
+
+<!-- # Plot the results -->
+
+```{r}
+plot(x, col = (y + 1))
+```
+
+<!-- # Fit a multi-class SVM (one-versus-one approach) -->
+
+```{r, include=FALSE}
+svmfit <- svm(y ~ ., data = dat, kernel = "radial", cost = 10, gamma = 1)
+summary(svmfit)
+```
+
+<!-- # Plot the results -->
+
+```{r}
+plot(svmfit, dat)
+```
+
+<!-- # -------------------------------------------- # -->
+<!-- <!-- # Application to Gene Expression Data --> -->
+<!-- # -------------------------------------------- # -->
+
+<!-- # The dataset consists of a number of tissue samples. -->
+<!-- # Response: 4 distinct types of small round blue cell tumors -->
+<!-- # Predictors: Gene expression measurements for 2308 genes -->
+
+```{r, include=FALSE}
+library(ISLR)
+```
+
+<!-- # Look at the dataset -->
+
+```{r, include=FALSE}
+?Khan
+names(Khan)
+dim(Khan$xtrain)
+length(Khan$ytrain)
+dim(Khan$xtest)
+length(Khan$ytest)
+```
+
+<!-- # Frequency distribution of training and test responses -->
+
+```{r, include=FALSE}
+table(Khan$ytrain)
+table(Khan$ytest)
+```
+
+<!-- # Fit an SVM with a linear kernel (works since p is very large compared to n) -->
+<!-- # Use cost = 10 -->
+
+```{r, include=FALSE}
+dat <- data.frame(x = Khan$xtrain, y = as.factor(Khan$ytrain))
+out <- svm(y ~ ., data = dat, kernel = "linear", cost = 10)
+summary(out)
+```
+
+<!-- # Examine the training error -->
+
+```{r, include=FALSE}
+table(out$fitted, dat$y)
+```
+
+<!-- # Is this surprising? -->
+
+<!-- # Examine the test error -->
+
+```{r, include=FALSE}
+dat.te <- data.frame(x = Khan$xtest, y = as.factor(Khan$ytest))
+pred.te <- predict(out, newdata = dat.te)
+table(pred.te, dat.te$y)
+```
+
+<!-- # With cost = 10, there are two test errors. -->
+
+<!-- ################################################################### -->
+
