@@ -25,8 +25,6 @@ From the confusion matrix it is evident to see that there are only two observati
 
 After performing a 10-Fold CV. I stored the optimal cost parameter and used it to fit a Support Vector Machine with polynomial kernel degree 2. The decision boundaries from different Groups can be seen in the plot.
 
-After performing a 10-Fold CV. I stored the optimal cost parameter and used it to fit a Support Vector Classifier. The decision boundaries from different Groups can be seen in the plot.
-
 <p float="left">
   <img src="https://github.com/JaimeGoB/Support-Vector-Machine-Decision-Boundary/blob/main/data/svm_polynomial_boundaries.png" width="500" height="420">
   <img src="https://github.com/JaimeGoB/Support-Vector-Machine-Decision-Boundary/blob/main/data/svm_polynomial_results.png" width="300" height="420">
